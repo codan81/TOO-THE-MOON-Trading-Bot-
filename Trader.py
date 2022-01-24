@@ -145,7 +145,7 @@ def buy_and _sell(signal)
   # Load in Models
   lstm = tf.keras.load_model('Proto_Models/LSTM_Proto_1855.545406705499.h5')
   dense = tf.keras.load_model('Proto_Models/Dense_Proto_0.5345016429353778%.h5') 
-  mlp = tf.keras.load_model('Proto_Models/MLP_Proto') 
+  mlp = tf.keras.load_model('Proto_Models/MLP_Proto.h5') 
 
   p_lstm = lstm.predict(X_lstm)
   p_dense = dense.predict(X)
