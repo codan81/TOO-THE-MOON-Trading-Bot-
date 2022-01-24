@@ -19,6 +19,7 @@ load_dotenv()
 API_KEY = os.getenv("ALPACA_API_KEY")
 API_SECRET = os.getenv("ALPACA_SECRET_KEY")
 ALPACA_API_BASE_URL = "https://paper-api.alpaca.markets"
+api = tradeapi.REST(API_KEY, API_SECRET, ALPACA_API_BASE_URL, api_version="v2")
 
 
 
@@ -34,6 +35,7 @@ def get_lstm_scaled_data(tickers, period, interval):
   return scaler, x_array
 
 
+
 # Function to get all indicators to predict with and returns a list of indicators and new df with indicators
 def get_indicators(df):
   # Use Indicators from TA to get trading indicators for stock
@@ -47,6 +49,7 @@ def get_indicators(df):
   return trading_signals_df, indicators_list
 
 
+
 # Function to get signals and scale them with standardscaler and outputs the X values to predict with with Dense and MLP.
 def get_signals_scaled_data(tickers, period, interval):
   original = yf.download(tickers =tickers, period=period , interval=interval)
@@ -57,6 +60,7 @@ def get_signals_scaled_data(tickers, period, interval):
   scaler.fit(df)
   x_scaled = scaler.transform(x)
   return scaler, x_scaled
+
 
 
 # Function to change lstm value to adj close prediction and then calculate pct_change to get predicted RTN for next interval
@@ -75,6 +79,7 @@ def lstm_pred_to_signal(lstm_pred, X, scaler):
   return pred
 
 
+
 # Function to get_signals for Buy Sell column that outputs from Dense and MLP predicion (whichever value is greater)
 def get_signal(pred):
   signal = []
@@ -86,10 +91,10 @@ def get_signal(pred):
   return signal
 
 
+
 # Function to buy stocks on alpaca
 def alpaca_buy(ticker, stocks_to_buy):
-  api = tradeapi.REST(API_KEY, API_SECRET, ALPACA_API_BASE_URL, api_version="v2")
-  prices = api.get_barset(ticker, "1Min").df
+  prices = api.get_latest_bar(ticker).close
   limit_amount = prices[ticker]["close"][-1]
   # Submit order
   api.submit_order(
@@ -97,16 +102,15 @@ def alpaca_buy(ticker, stocks_to_buy):
       qty=stocks_to_buy, 
       side='buy', 
       time_in_force="gtc", 
-      type="limit", 
+      type="market", 
       limit_price=limit_amount
   )
 
 
 
-# Function to sell stocks on alpaca
+# Function to sell stocks on alpaca (***Has to check if stocks are held before selling)
 def alpaca_sell(ticker, stocks_to_sell):
-  api = tradeapi.REST(API_KEY, API_SECRET, ALPACA_API_BASE_URL, api_version="v2")
-  prices = api.get_barset(ticker, "1Min").df
+  prices = api.get_latest_bar(ticker).close
   limit_amount = prices[ticker]["close"][-1]
   # Submit order
   api.submit_order(
@@ -114,7 +118,7 @@ def alpaca_sell(ticker, stocks_to_sell):
       qty=stocks_to_sell, 
       side='sell', 
       time_in_force="gtc", 
-      type="limit", 
+      type="market", 
       limit_price=limit_amount
   )
 
@@ -130,11 +134,13 @@ def buy_and _sell(signal)
   tickers = '^NDX'
   period = 'MAX'
   interval = '1d'
-  # Please insert how many stocks you would like to buy here.
-  stocks_tqqq = 0
-  stocks_sqqq =  0
   mm_scaler, X_lstm = get_lstm_scaled_data(tickers, period, interval)
   std_scaler, X = get_signals_scaled_data(tickers, period, interval)
+  
+  # Please insert how many stocks you would like to buy here.
+  stocks_tqqq = 0
+  stocks_sqqq = 0
+
 
   # Load in Models
   lstm = tf.keras.load_model('Proto_Models/LSTM_Proto_1855.545406705499.h5')
