@@ -42,24 +42,29 @@ def get_indicators(df):
   bbands_df = TA.BBANDS(df)
   mfi_df = pd.DataFrame({'MFI':TA.MFI(df)})
   macd_df = TA.MACD(df)
-  smas_df = pd.DataFrame({'SMA_Short': TA.SMA(df, period=20)})
-  smal_df = pd.DataFrame({'SMA_Long': TA.SMA(df, period=120)})
-  indicators_list = bbands_df.columns.values.tolist() + mfi_df.columns.values.tolist() + macd_df.columns.values.tolist() + smas_df.columns.values.tolist() + smal_df.columns.values.tolist()
-  trading_signals_df = pd.concat([df, bbands_df, mfi_df, macd_df, smas_df, smal_df], axis=1)
-  return trading_signals_df, indicators_list
+  obv_df = pd.DataFrame({'OBV':TA.OBV(nasdaq100_df)})
+  in_list_d = bbands_df.columns.values.tolist() + mfi_df.columns.values.tolist() + macd_df.columns.values.tolist()
+  in_list_mlp = bbands_df.columns.values.tolist() + mfi_df.columns.values.tolist() + ['OBV']
+  trading_signals_df = pd.concat([df, bbands_df, mfi_df, macd_df, obv_df], axis=1)
+  return trading_signals_df, in_list_d, in_list_mlp
 
 
 
 # Function to get signals and scale them with standardscaler and outputs the X values to predict with with Dense and MLP.
 def get_signals_scaled_data(tickers, period, interval):
   original = yf.download(tickers =tickers, period=period , interval=interval)
-  df, in_list = get_indicators(original)
-  df = df[in_list][:-1]
-  x = df[in_list][-1:]
+  df, in_list_d, in_list_mlp = get_indicators(original)
+  d_df = df[in_list_d][:-1]
+  x_d = df[in_list_d][-1:]
+  mlp_df = df[in_list_mlp][:-1]
+  x_mlp = df[in_list_mlp][-1:]
   scaler = StandardScaler()
-  scaler.fit(df)
-  x_scaled = scaler.transform(x)
-  return scaler, x_scaled
+  scaler.fit(d_df)
+  xd_scaled = scaler.transform(x_d)
+  scaler_mm = MinMaxScaler(feature_range=(0,1))
+  scaler_mm.fit(mlp_df)
+  xmlp_scaled = scaler_mm.transform(x_mlp)
+  return scaler_mm, xd_scaled, xmlp_scaled
 
 
 
@@ -90,6 +95,13 @@ def get_signal(pred):
       signal.append(-1)
   return signal
 
+
+def get_mlp_signal(pred):
+  signal=[]
+  if pred == 0:
+    signal.append(-1)
+  elif pred == 1:
+    signal.append(1)
 
 
 # Function to buy stocks on alpaca
@@ -134,8 +146,8 @@ def buy_and_sell(signal):
   tickers = '^NDX'
   period = 'MAX'
   interval = '1d'
-  mm_scaler, X_lstm = get_lstm_scaled_data(tickers, period, interval)
-  std_scaler, X = get_signals_scaled_data(tickers, period, interval)
+  lstm_scaler, X_lstm = get_lstm_scaled_data(tickers, period, interval)
+  mlp_scaler, X_d, X_mlp = get_signals_scaled_data(tickers, period, interval)
   
   # Please insert how many stocks you would like to buy here.
   stocks_tqqq = 0
@@ -148,13 +160,13 @@ def buy_and_sell(signal):
   mlp = tf.keras.models.load_model('Proto_Models/MLP_Proto.h5') 
 
   p_lstm = lstm.predict(X_lstm)
-  p_dense = dense.predict(X)
-  p_mlp = mlp.predict(X)
+  p_dense = dense.predict(X_d)
+  p_mlp = mlp.predict(X_mlp)
 
   new_signal = sum(
-          lstm_pred_to_signal(p_lstm, X_lstm, mm_scaler)+
+          lstm_pred_to_signal(p_lstm, X_lstm, lstm_scaler)+
           get_signal(p_dense)+
-          get_signal(p_mlp)
+          get_mlp_signal(p_mlp)
           )
 
   if (new_signal % 2) != 0:
