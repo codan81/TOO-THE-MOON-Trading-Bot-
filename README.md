@@ -58,7 +58,7 @@ Israel Fernandez --
 
 Deep Patel -- Deep4Patel9@gmail.com
 
-Dominik Tortes -- 
+Dominik Tortes -- domtortes@berkeley.edu
 
 ---
 ## License
