@@ -11,6 +11,8 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import alpaca_trade_api as tradeapi
+import pickle
+
 
 # Load .env environment variables
 load_dotenv()
@@ -42,7 +44,7 @@ def get_indicators(df):
   bbands_df = TA.BBANDS(df)
   mfi_df = pd.DataFrame({'MFI':TA.MFI(df)})
   macd_df = TA.MACD(df)
-  obv_df = pd.DataFrame({'OBV':TA.OBV(nasdaq100_df)})
+  obv_df = pd.DataFrame({'OBV':TA.OBV(df)})
   in_list_d = bbands_df.columns.values.tolist() + mfi_df.columns.values.tolist() + macd_df.columns.values.tolist()
   in_list_mlp = bbands_df.columns.values.tolist() + mfi_df.columns.values.tolist() + ['OBV']
   trading_signals_df = pd.concat([df, bbands_df, mfi_df, macd_df, obv_df], axis=1)
@@ -69,17 +71,16 @@ def get_signals_scaled_data(tickers, period, interval):
 
 
 # Function to change lstm value to adj close prediction and then calculate pct_change to get predicted RTN for next interval
-def lstm_pred_to_signal(lstm_pred, X, scaler):
-  pred = scaler.inverse_transform(lstm_pred)
-  pred_df = pd.DataFrame({'Predicted':pd.concat([X.iloc[[-1],], pred], axis=0)})
-  pred_df['Pred_RTN'] = pred_df['Predicted'].pct_change()
-  pred_df = pred_df.dropna()
+def lstm_pred_to_signal(lstm_pred, scaler, tickers, interval):
+  unscaled = scaler.inverse_transform(lstm_pred)
+  X = yf.download(tickers = tickers, period='5D' , interval=interval)
+  pred_val = (unscaled.sum() - X['Adj Close'][-1:])/unscaled.sum() 
   pred = []
   # Generate Signal to buy stock[1] in Buy column
-  if pred_df['Pred_RTN'] >= 0:
+  if pred_val[-1] >= 0:
     pred.append(1)
   # Generate Signal to sell stock[1] in Sell column
-  elif pred_df['Pred_RTN'] < 0:
+  elif pred_val[-1] < 0:
     pred.append(-1)
   return pred
 
@@ -88,11 +89,10 @@ def lstm_pred_to_signal(lstm_pred, X, scaler):
 # Function to get_signals for Buy Sell column that outputs from Dense and MLP predicion (whichever value is greater)
 def get_signal(pred):
   signal = []
-  for i in range(0, len(pred)):
-    if pred[i][0] >= pred[i][1]:
-      signal.append(1)
-    elif pred[i][0] < pred[i][1]:
-      signal.append(-1)
+  if pred[0][0] >= pred[0][1]:
+    signal.append(1)
+  elif pred[0][0] < pred[0][1]:
+    signal.append(-1)
   return signal
 
 
@@ -102,7 +102,7 @@ def get_mlp_signal(pred):
     signal.append(-1)
   elif pred == 1:
     signal.append(1)
-
+  return signal
 
 # Function to buy stocks on alpaca
 def alpaca_buy(ticker, stocks_to_buy):
@@ -156,20 +156,21 @@ def buy_and_sell(signal):
 
   # Load in Models
   lstm = tf.keras.models.load_model('Proto_Models/LSTM_Proto_1855.545406705499.h5')
-  dense = tf.keras.models.load_model('Proto_Models/Dense_Proto_0.5345016429353778%.h5') 
-  mlp = tf.keras.models.load_model('Proto_Models/MLP_Proto.h5') 
+  dense = tf.keras.models.load_model('Proto_Models/Dense_Proto_0.5345016429353778%.h5')
+  with open('Proto_Models/MLP_Proto.pkl', 'rb') as f:
+    mlp = pickle.load(f)
 
   p_lstm = lstm.predict(X_lstm)
   p_dense = dense.predict(X_d)
   p_mlp = mlp.predict(X_mlp)
 
   new_signal = sum(
-          lstm_pred_to_signal(p_lstm, X_lstm, lstm_scaler)+
+          lstm_pred_to_signal(p_lstm, lstm_scaler, tickers, interval)+
           get_signal(p_dense)+
           get_mlp_signal(p_mlp)
           )
 
-  if (new_signal % 2) != 0:
+  if ((new_signal % 2) != 0) or (new_signal == 2) or (new_signal == -2):
     if ((signal > 0  and new_signal > 0) or (signal < 0  and new_signal < 0)):
       signal = signal
       print(f'Predicted Signal same as previous signal: {new_signal}.')
@@ -187,6 +188,7 @@ def buy_and_sell(signal):
         alpaca_buy('SQQQ', stocks_sqqq)
         signal = -1
         print(f"Sold {stocks_tqqq} of TQQQ. Bought {stocks_sqqq} of SQQQ")
+        
   else:
     print(f'There was a tie. One predicted signals was 0. The sum of the 3 signals is {new_signal}.')
     signal = signal
