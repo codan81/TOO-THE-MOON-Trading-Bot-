@@ -54,7 +54,13 @@ $ pip install alpaca-trade-api
 
 This is a trading function used to get the current data for the NASDAQ 100 (^NDX) and predict using three models (LSTM, Dense, and MLP Classifier) to decide whether or not to buy into TQQQ, which moves together with NASDAQ 100, and sell on SQQQ, which moves inverse to NASDAQ 100, or vice versa if a sell signal appears as the majority among the models. The initial run requires the user to input either a 1, -1, or 0. For a 1 the model will only act when it gets a sell signal from NASDAQ 100. For -1 it is the opposite and will only act with a buy signal. For 0 it will perform the first action that occurs. Please not the after running the function once reassign the variable in then buy and sell function with the output from the first iteration.
 
-The models that are used have a accuracy for predicting buy and sell signals ranging from 50-55%. Due to limited time the models have not been fully optimized. 
+![to_the_moon](images/LSTM_dnn.jpg)
+
+
+The models that are used have a accuracy for predicting buy and sell signals ranging from 50-60%. Due to limited time the models have not been fully optimized. 
+
+![to_the_moon](images/MLP_report.jpg)
+
 
 ---
 ## Contributors
