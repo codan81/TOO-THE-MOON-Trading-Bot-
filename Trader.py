@@ -29,7 +29,7 @@ def get_lstm_scaled_data(tickers, period, interval):
   x_train = pd.DataFrame(original['Adj Close'][:-64])
   x = pd.DataFrame(original['Adj Close'][-64:])
   scaler = MinMaxScaler(feature_range=(-1,1))
-  scaler.fit(original)
+  scaler.fit(x_train)
   x_scaled = scaler.transform(x)
   x_array = np.reshape(x_scaled, (1,64,1))
   return scaler, x_array
@@ -129,7 +129,7 @@ def alpaca_sell(ticker, stocks_to_sell):
 #           -1 it will buy next for TQQQ and sell for SQQQ if new_signal is >0
 #            1 it will sell next for TQQQ and buy for SQQQ if new_signal is <0
 #            0 will cause whatever new_signal that appears after first iteration to run for buy and sell
-def buy_and _sell(signal)
+def buy_and_sell(signal):
   #Load in X_lstm and X data
   tickers = '^NDX'
   period = 'MAX'
@@ -143,9 +143,9 @@ def buy_and _sell(signal)
 
 
   # Load in Models
-  lstm = tf.keras.load_model('Proto_Models/LSTM_Proto_1855.545406705499.h5')
-  dense = tf.keras.load_model('Proto_Models/Dense_Proto_0.5345016429353778%.h5') 
-  mlp = tf.keras.load_model('Proto_Models/MLP_Proto.h5') 
+  lstm = tf.keras.models.load_model('Proto_Models/LSTM_Proto_1855.545406705499.h5')
+  dense = tf.keras.models.load_model('Proto_Models/Dense_Proto_0.5345016429353778%.h5') 
+  mlp = tf.keras.models.load_model('Proto_Models/MLP_Proto.h5') 
 
   p_lstm = lstm.predict(X_lstm)
   p_dense = dense.predict(X)
