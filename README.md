@@ -1,5 +1,11 @@
 # TOO-THE-MOON-Trading-Bot-
 
+
+
+![to_the_moon](images/to_the_moon.jpg)
+
+
+
 Using the NASDAQ 100 as an indicator, this trading algorithm will buy/sell into TQQQ and sell/buy into SQQQ. Once fully optimized your dream of going to the MOON might possibly be achieved but be warned all trading comes with risk. Use this model at you own risk and be warned that the models used for this algorithm have not been fully optimized.
 
 ---
