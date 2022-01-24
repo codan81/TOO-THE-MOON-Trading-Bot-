@@ -94,7 +94,7 @@ def get_signal(pred):
 
 # Function to buy stocks on alpaca
 def alpaca_buy(ticker, stocks_to_buy):
-  prices = api.get_latest_bar(ticker).close
+  prices = api.get_barset(ticker, "1Min").df
   limit_amount = prices[ticker]["close"][-1]
   # Submit order
   api.submit_order(
@@ -110,7 +110,7 @@ def alpaca_buy(ticker, stocks_to_buy):
 
 # Function to sell stocks on alpaca (***Has to check if stocks are held before selling)
 def alpaca_sell(ticker, stocks_to_sell):
-  prices = api.get_latest_bar(ticker).close
+  prices = api.get_barset(ticker, "1Min").df
   limit_amount = prices[ticker]["close"][-1]
   # Submit order
   api.submit_order(
