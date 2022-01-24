@@ -114,7 +114,7 @@ def alpaca_buy(ticker, stocks_to_buy):
       qty=stocks_to_buy, 
       side='buy', 
       time_in_force="gtc", 
-      type="market", 
+      type="limit", 
       limit_price=limit_amount
   )
 
@@ -130,7 +130,7 @@ def alpaca_sell(ticker, stocks_to_sell):
       qty=stocks_to_sell, 
       side='sell', 
       time_in_force="gtc", 
-      type="market", 
+      type="limit", 
       limit_price=limit_amount
   )
 
@@ -150,8 +150,8 @@ def buy_and_sell(signal):
   mlp_scaler, X_d, X_mlp = get_signals_scaled_data(tickers, period, interval)
   
   # Please insert how many stocks you would like to buy here.
-  stocks_tqqq = 0
-  stocks_sqqq = 0
+  stocks_tqqq = 1
+  stocks_sqqq = 1
 
 
   # Load in Models
